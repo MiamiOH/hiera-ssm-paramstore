@@ -5,12 +5,12 @@
 # @example
 #   include hiera_ssm_paramstore
 class hiera_ssm_paramstore (
-  access_key        = undef,
-  config_dir        = undef,
-  region            = undef,
-  role_arn          = undef,
-  secret_access_key = undef,
-  user              = undef,
+  $access_key        = undef,
+  $config_dir        = undef,
+  $region            = undef,
+  $role_arn          = undef,
+  $secret_access_key = undef,
+  $user              = undef,
 ){
 
   $provider = $::environment ? {
@@ -19,8 +19,8 @@ class hiera_ssm_paramstore (
   }
 
   package { 'aws-sdk-ssm':
-    ensure          => present,
-    provider        => $provider,
+    ensure   => present,
+    provider => $provider,
   }
 
   $_config_dir = $config_dir ? {
