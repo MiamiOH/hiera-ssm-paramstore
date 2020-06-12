@@ -31,4 +31,16 @@ class hiera_ssm_paramstore (
     },
     default => $config_dir,
   }
+
+  $access_key = extlib::cache_data('cache_data/aws_params', 'access_key', extlib::random_password(20))
+  $secret_access_key = extlib::cache_data('cache_data/aws_params', 'secret_access_key', extlib::random_password(40))
+
+  hiera_ssm_paramstore::config {
+    access_key        => $access_key,
+    config_dir        => $_config_dir,
+    region            => $region,
+    role_arn          => $role_arn,
+    secret_access_key => $secret_access_key,
+    before            => Package['aws-sdk-ssm'],
+  }
 }
