@@ -5,23 +5,14 @@
 # @example
 #   include hiera_ssm_paramstore
 class hiera_ssm_paramstore (
-  $access_key        = undef,
-  $config_dir        = undef,
-  $region            = undef,
-  $role_arn          = undef,
-  $secret_access_key = undef,
-  $user              = undef,
+  String               $access_key        = undef,
+  Stdlib::Absolutepath $config_dir,
+  String               $package_name      = undef,
+  String               $region            = undef,
+  String               $role_arn          = undef,
+  String               $secret_access_key = undef,
+  String               $user              = undef,
 ){
-
-  $provider = $::environment ? {
-    'vagrant' => puppet_gem,
-    default   => puppetserver_gem,
-  }
-
-  package { 'aws-sdk-ssm':
-    ensure   => present,
-    provider => $provider,
-  }
 
   $_config_dir = $config_dir ? {
     undef   => $user ? {
@@ -32,12 +23,6 @@ class hiera_ssm_paramstore (
     default => $config_dir,
   }
 
-  hiera_ssm_paramstore::config {
-    access_key        => $access_key,
-    config_dir        => $_config_dir,
-    region            => $region,
-    role_arn          => $role_arn,
-    secret_access_key => $secret_access_key,
-    before            => Package['aws-sdk-ssm'],
-  }
+  contain 'hiera_ssm_paramstore::config'
+
 }
