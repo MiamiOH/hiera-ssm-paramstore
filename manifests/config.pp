@@ -17,8 +17,8 @@ class hiera_ssm_paramstore::config {
 
   file { $config_dir:
     ensure => directory
-    owner  => $user,
-    group  => $user,
+    owner  => $hiera_ssm_paramstore::user,
+    group  => $hiera_ssm_paramstore::user,
     mode   => '0700',
   } ->
 
@@ -29,15 +29,15 @@ class hiera_ssm_paramstore::config {
 
   file { "${config_dir}/config":
     ensure => file,
-    owner  => $user,
-    group  => $user,
+    owner  => $hiera_ssm_paramstore::user,
+    group  => $hiera_ssm_paramstore::user,
     mode   => '0600',
   } ->
 
   file { "${config_dir}/credentials":
     ensure => file,
-    owner  => $user,
-    group  => $user,
+    owner  => $hiera_ssm_paramstore::user,
+    group  => $hiera_ssm_paramstore::user,
     mode   => '0600',
   } ->
 

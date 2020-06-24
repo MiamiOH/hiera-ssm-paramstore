@@ -14,15 +14,7 @@ class hiera_ssm_paramstore (
   String               $user              = undef,
 ){
 
-  $_config_dir = $config_dir ? {
-    undef   => $user ? {
-      'puppet' => "${::puppet_vardir}/.aws",
-      'root'   => "${::root_home}/.aws",
-      default  => "/home/${user}/.aws",
-    },
-    default => $config_dir,
-  }
-
-  contain 'hiera_ssm_paramstore::config'
+  contain '::hiera_ssm_paramstore::config'
+  contain '::hiera_ssm_paramstore::install'
 
 }
