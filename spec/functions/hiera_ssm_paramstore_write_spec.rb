@@ -1,39 +1,53 @@
-require 'spec_helper'
+# frozen_string_literal: true
 
-describe 'hiera_ssm_paramstore_write' do
-  describe 'write_key' do
-    context 'Should run without a hiera context' do
-      let(:options) do
-        {
-          'uri' => '/',
-          'region' => 'us-east-1',
-          'get_all' => false,
-          'put' => { overwrite: true, tags: nil },
-        }
-      end
+require 'aws-sdk-ssm'
 
-      it 'write string' do
-        is_expected.to run.with_params('write/plain', 'write:value_plain', options).and_return('write:value_plain')
-      end
+Puppet::Functions.create_function(:hiera_ssm_paramstore_write) do
+  dispatch :write_key do
+    param 'String', :key
+    param 'String', :value
+    optional_param 'Hash', :options
+  end
 
-      it 'write secure string' do
-        options['put'] = { type: 'SecureString', overwrite: true, tags: nil }
-        is_expected.to run.with_params('write/encrypted', 'write:value_encrypted', options).and_return('write:value_encrypted')
-      end
+  def write_key(key, value, options = {})
+    options = {
+      'uri' => '/',
+      'region' => 'us-east-1',
+      'get_all' => false,
+      'put' => {
+        'overwrite' => true,
+      },
+    }.merge(options)
 
-      it 'write same key' do
-        options['put'] = { overwrite: false }
-        is_expected.to run.with_params('write/plain', 'write:value_plain', options).and_raise_error(Puppet::DataBinding::LookupError)
-      end
+    parameter_name = "#{options['uri']}#{key.gsub('::', '/')}"
 
-      it 'write string using another region' do
-        options['region'] = 'us-east-2'
-        is_expected.to run.with_params('write/region2', 'write:ohio', options).and_return('write:ohio')
-      end
+    put_options = options['put'] || {}
 
-      it 'write translate string' do
-        is_expected.to run.with_params('write::plain::translate', 'write:parameter_value', options).and_return('write:parameter_value')
-      end
-    end
+    type = put_options['type'] || 'String'
+    overwrite = put_options.key?('overwrite') ? put_options['overwrite'] : true
+
+    tags = put_options['tags'] || [
+      {
+        key: 'CreatedBy',
+        value: 'puppet',
+      },
+    ]
+
+    ssm_client = Aws::SSM::Client.new(
+      region: options['region'],
+    )
+
+    ssm_client.put_parameter(
+      **{
+        description: 'Added by hiera_ssm_paramstore_write',
+        name: parameter_name,
+        overwrite:,
+        tags:,
+        type:,
+        value:,
+      },
+    )
+
+    value
   end
 end

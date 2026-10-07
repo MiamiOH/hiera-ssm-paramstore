@@ -15,8 +15,8 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
     key_path = options['uri'] + key.gsub('::', '/')
     key_path = context.interpolate(key_path) if context
 
-    # Searches for key and key path due to ssm return just the key for keys on the root path (/)
-    # and the full path for the rest (/path/key)
+    # Searches for key and key path because SSM returns just the key for
+    # keys on the root path (/) and the full path for the rest (/path/key).
     if options['get_all'] && context
       if !context.cache_has_key('ssm_cached')
         context.explain { 'No cache, caching...' }
@@ -24,19 +24,19 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
       else
         context.explain { 'Cache populated!!!' }
       end
+
       if context.cache_has_key(key)
         context.explain { "Returning value for key #{key}" }
-        return context.cached_value(key)
+        context.cached_value(key)
       elsif context.cache_has_key(key_path)
         context.explain { "Returning value for #{key}" }
-        return context.cached_value(key_path)
+        context.cached_value(key_path)
       else
         context.explain { "Key #{key} not found" }
-        return context.not_found
+        context.not_found
       end
     else
-      result = get_parameter(key_path, options, context)
-      return result
+      get_parameter(key_path, options, context)
     end
   end
 
@@ -52,56 +52,63 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
 
   def get_all_parameters(options, context)
     token = nil
-    options['recursive'] ||= false
+    recursive = options.fetch('recursive', false)
     ssmclient = ssm_get_connection(options)
 
     loop do
-      begin
-        context.explain { "Getting keys on #{options['uri']} ..." }
-        data = ssmclient.get_parameters_by_path(path: options['uri'],
-                                                with_decryption: true,
-                                                recursive: options['recursive'],
-                                                next_token: token)
-        context.explain { 'Adding keys on cache ...' }
-        data['parameters'].each do |k|
-          context.cache(k['name'], k['value'])
-        end
+      context.explain { "Getting keys on #{options['uri']} ..." }
 
-        context.explain { 'Marking cache as populated' }
-        context.cache('ssm_cached', 'true')
+      data = ssmclient.get_parameters_by_path(
+        path: options['uri'],
+        with_decryption: true,
+        recursive:,
+        next_token: token,
+      )
 
-        break if data.next_token.nil?
-        token = data.next_token
-      rescue Aws::SSM::Errors::ServiceError => e
-        raise Puppet::DataBinding::LookupError, "AWS SSM Service error #{e.message}"
+      context.explain { 'Adding keys on cache ...' }
+
+      data['parameters'].each do |parameter|
+        context.cache(parameter['name'], parameter['value'])
       end
+
+      context.explain { 'Marking cache as populated' }
+      context.cache('ssm_cached', 'true')
+
+      break if data.next_token.nil?
+
+      token = data.next_token
+    rescue Aws::SSM::Errors::ServiceError => e
+      raise Puppet::DataBinding::LookupError,
+            "AWS SSM Service error #{e.message} with path: #{options['uri']}"
     end
   end
 
   def get_parameter(key_path, options, context)
     ssmclient = ssm_get_connection(options)
 
-    if context && context.cache_has_key(key_path)
+    if context&.cache_has_key(key_path)
       context.explain { "Returning cached value for #{key_path}" }
-      return context.cached_value(key_path)
+      context.cached_value(key_path)
     else
-      context.explain { "Looking for #{key_path}" } if context
+      context&.explain { "Looking for #{key_path}" }
 
       begin
-        resp = ssmclient.get_parameters(names: [key_path],
-                                        with_decryption: true)
+        resp = ssmclient.get_parameters(
+          names: [key_path],
+          with_decryption: true,
+        )
+
         if !resp.parameters.empty?
           value = resp.parameters[0].value
-          context.cache(key_path, value) if context
-          return value
+          context&.cache(key_path, value)
+          value
         elsif context
           context.explain { "Key #{key_path} not found" }
           context.not_found
-        else
-          return nil
         end
       rescue Aws::SSM::Errors::ServiceError => e
-        raise Puppet::DataBinding::LookupError, "AWS SSM Service error #{e.message}"
+        raise Puppet::DataBinding::LookupError,
+              "AWS SSM Service error #{e.message} with names: [#{key_path}]"
       end
     end
   end
