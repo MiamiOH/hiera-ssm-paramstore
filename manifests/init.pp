@@ -2,13 +2,17 @@
 #
 # A description of what this class does
 #
+# Package containing the hiera_ssm_paramstore dependencies.
+#
+# @param package_name
+#   Name of the package to install.
+#
 # @example
 #   include hiera_ssm_paramstore
 class hiera_ssm_paramstore (
   String $package_name,
-){
-
-  $provider = $::environment ? {
+) {
+  $provider = $facts['environment'] ? {
     'vagrant' => puppet_gem,
     default   => puppetserver_gem,
   }
@@ -17,5 +21,4 @@ class hiera_ssm_paramstore (
     ensure   => present,
     provider => $provider,
   }
-
 }

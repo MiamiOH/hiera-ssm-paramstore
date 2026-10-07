@@ -1,6 +1,6 @@
 {
   "name": "luizvasconceloss-hiera_ssm_paramstore",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "author": "Luiz Vasconcelos",
   "summary": "Hiera 5 backend to query data on AWS System Manager Parameter Store",
   "license": "Apache-2.0",
@@ -17,35 +17,48 @@
     {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "6",
         "7",
-        "8"
+        "8",
+        "9"
       ]
     },
     {
-      "operatingsystem": "CentOS",
+      "operatingsystem": "Rocky",
       "operatingsystemrelease": [
-        "6",
-        "7",
-        "8"
+        "8",
+        "9"
+      ]
+    },
+    {
+      "operatingsystem": "AlmaLinux",
+      "operatingsystemrelease": [
+        "8",
+        "9"
       ]
     },
     {
       "operatingsystem": "Debian",
       "operatingsystemrelease": [
-        "8",
-        "9",
-        "10"
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "20.04",
+        "22.04",
+        "24.04"
       ]
     }
   ],
   "requirements": [
     {
       "name": "puppet",
-      "version_requirement": ">= 4.9.0"
+      "version_requirement": ">= 7.0.0 < 9.0.0"
     }
   ],
-  "pdk-version": "3.5.1 (g7d6a7d3)",
-  "template-url": "pdk-default#3.5.1",
-  "template-ref": "tags/3.5.1-0-g9d5b193"
+  "pdk-version": "3.5.1",
+  "template-url": "pdk-default#3.5.1"
 }

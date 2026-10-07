@@ -34,7 +34,7 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore_write) do
   def put_parameter(key_path, value, options, ssmclient)
     put_options = { name: key_path,
                     description: 'Added by hiera_ssm_paramstore_write',
-                    value: value,
+                    value:,
                     type: 'String',
                     tags: [
                       {
