@@ -16,8 +16,9 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore_write) do
     ssmclient = ssm_get_connection(options)
 
     put_parameter(key_path, value, options, ssmclient)
-    # Fetch the newly created item. This both tests the creation and yields the result
-    # in the expected format.
+
+    # Fetch the newly created item. This both tests the creation
+    # and yields the result in the expected format.
     get_parameter(key_path, ssmclient)
   end
 
@@ -32,17 +33,22 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore_write) do
   end
 
   def put_parameter(key_path, value, options, ssmclient)
-    put_options = { name: key_path,
-                    description: 'Added by hiera_ssm_paramstore_write',
-                    value:,
-                    type: 'String',
-                    tags: [
-                      {
-                        key: 'CreatedBy',
-                        value: 'puppet',
-                      },
-                    ] }
-    put_options = put_options.merge(symbolize_keys(options['put'])) if options['put']
+    put_options = {
+      name: key_path,
+      description: 'Added by hiera_ssm_paramstore_write',
+      value: value,
+      type: 'String',
+      tags: [
+        {
+          key: 'CreatedBy',
+          value: 'puppet',
+        },
+      ],
+    }
+
+    if options['put']
+      put_options = put_options.merge(symbolize_keys(options['put']))
+    end
 
     begin
       ssmclient.put_parameter(put_options)
@@ -52,22 +58,26 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore_write) do
   end
 
   def get_parameter(key_path, ssmclient)
-    resp = ssmclient.get_parameters(names: [key_path],
-                                    with_decryption: true)
+    resp = ssmclient.get_parameters(
+      names: [key_path],
+      with_decryption: true,
+    )
 
     return nil if resp.parameters.empty?
+
     resp.parameters[0].value
   rescue Aws::SSM::Errors::ServiceError => e
     raise Puppet::DataBinding::LookupError, "AWS SSM Service error #{e.message} with names: [#{key_path}]"
   end
 
   def symbolize_keys(options)
-    options.each_with_object({}) do |(k, v), hash|
-      hash[k.to_sym] = if v.is_a?(Array)
-                         v.map { |t| t.is_a?(Hash) ? symbolize_keys(t) : t }
-                       else
-                         v
-                       end
+    options.each_with_object({}) do |(key, value), hash|
+      hash[key.to_sym] =
+        if value.is_a?(Array)
+          value.map { |item| item.is_a?(Hash) ? symbolize_keys(item) : item }
+        else
+          value
+        end
     end
   end
 end

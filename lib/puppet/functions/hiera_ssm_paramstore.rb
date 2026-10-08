@@ -18,11 +18,11 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
     # Searches for key and key path because SSM returns just the key for
     # keys on the root path (/) and the full path for the rest (/path/key).
     if options['get_all'] && context
-      if !context.cache_has_key('ssm_cached')
+      if context.cache_has_key('ssm_cached')
+        context.explain { 'Cache populated!!!' }
+      else
         context.explain { 'No cache, caching...' }
         get_all_parameters(options, context)
-      else
-        context.explain { 'Cache populated!!!' }
       end
 
       if context.cache_has_key(key)
@@ -52,7 +52,7 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
 
   def get_all_parameters(options, context)
     token = nil
-    recursive = options.fetch('recursive', false)
+    options['recursive'] ||= false
     ssmclient = ssm_get_connection(options)
 
     loop do
@@ -61,7 +61,7 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
       data = ssmclient.get_parameters_by_path(
         path: options['uri'],
         with_decryption: true,
-        recursive:,
+        recursive: options['recursive'],
         next_token: token,
       )
 
@@ -105,6 +105,8 @@ Puppet::Functions.create_function(:hiera_ssm_paramstore) do
         elsif context
           context.explain { "Key #{key_path} not found" }
           context.not_found
+        else
+          nil
         end
       rescue Aws::SSM::Errors::ServiceError => e
         raise Puppet::DataBinding::LookupError,
